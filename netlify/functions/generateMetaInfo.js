@@ -3,7 +3,12 @@ const fetch = require("node-fetch");
 const rateLimitMap = new Map();
 
 exports.handler = async (event) => {
-  const allowOrigin = "https://www.rythmworks.com";
+  const allowedOrigins = [
+    "https://www.rythmworks.com",
+    "https://dapper-unicorn-552725.netlify.app"
+  ];
+  const origin = event.headers.origin || "";
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : "";
 
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -95,6 +100,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 }
 
