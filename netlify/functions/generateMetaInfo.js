@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
 
+// In-memory store for daily IP-based rate limits
 const rateLimitMap = new Map();
 
 exports.handler = async (event) => {
@@ -10,6 +11,7 @@ exports.handler = async (event) => {
   const origin = event.headers.origin || "";
   const allowOrigin = allowedOrigins.includes(origin) ? origin : "";
 
+  // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
@@ -28,6 +30,7 @@ exports.handler = async (event) => {
   const today = new Date().toDateString();
   const lastUsedDay = new Date(usage.lastUsed).toDateString();
 
+  // Enforce 5-per-day rate limit
   if (usage.count >= 5 && today === lastUsedDay) {
     return {
       statusCode: 429,
@@ -38,8 +41,8 @@ exports.handler = async (event) => {
     };
   }
 
+  // Parse input
   let topic = "", tone = "informative", platform = "blog";
-
   try {
     const parsed = JSON.parse(event.body || "{}");
     topic = parsed.topic;
@@ -50,6 +53,7 @@ exports.handler = async (event) => {
     return errorResponse(400, "Invalid input: " + err.message, allowOrigin);
   }
 
+  // GPT prompt
   const prompt = `Generate an SEO meta title and meta description for the following:
 Page topic: "${topic}"
 Page type: ${platform}
@@ -77,10 +81,12 @@ Description: ...`;
     const raw = data?.choices?.[0]?.message?.content;
     if (!raw) throw new Error("No content returned from OpenAI.");
 
+    // Extract title and description safely
     const [titleLine, ...descLines] = raw.split("\n").filter(Boolean);
     const title = titleLine.replace(/^Title:\s*/i, "").trim();
     const description = descLines.join(" ").replace(/^Description:\s*/i, "").trim();
 
+    // Save usage record
     rateLimitMap.set(userIP, {
       count: today === lastUsedDay ? usage.count + 1 : 1,
       lastUsed: Date.now(),
@@ -96,6 +102,7 @@ Description: ...`;
   }
 };
 
+// Helpers
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin,
