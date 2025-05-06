@@ -33,26 +33,33 @@ exports.handler = async (event) => {
     };
   }
 
-  let topic = "";
-  let tone = "informative";
+  let topic = "", tone = "informative", platform = "blog";
+
   try {
     const parsed = JSON.parse(event.body || "{}");
     topic = parsed.topic;
     tone = parsed.tone || "informative";
+    platform = parsed.platform || "blog";
     if (!topic) throw new Error("Topic is required.");
   } catch (err) {
     return errorResponse(400, "Invalid input: " + err.message, allowOrigin);
   }
 
-  const prompt = `Generate an SEO meta title and meta description for the following page topic: "${topic}".
-Use a ${tone} tone. Return both the title and description clearly labeled.`;
+  const prompt = `Generate an SEO meta title and meta description for the following:
+Page topic: "${topic}"
+Page type: ${platform}
+Tone: ${tone}
+
+Return the result in this format:
+Title: ...
+Description: ...`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: \`Bearer \${apiKey}\`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
@@ -66,8 +73,8 @@ Use a ${tone} tone. Return both the title and description clearly labeled.`;
     if (!raw) throw new Error("No content returned from OpenAI.");
 
     const [titleLine, ...descLines] = raw.split("\n").filter(Boolean);
-    const title = titleLine.replace(/^Title:\s*/, "").trim();
-    const description = descLines.join(" ").replace(/^Description:\s*/, "").trim();
+    const title = titleLine.replace(/^Title:\s*/i, "").trim();
+    const description = descLines.join(" ").replace(/^Description:\s*/i, "").trim();
 
     rateLimitMap.set(userIP, {
       count: today === lastUsedDay ? usage.count + 1 : 1,
@@ -97,4 +104,4 @@ function errorResponse(status, message, origin) {
     headers: corsHeaders(origin),
     body: JSON.stringify({ error: message }),
   };
-};
+}
