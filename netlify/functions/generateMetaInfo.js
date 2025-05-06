@@ -53,7 +53,6 @@ exports.handler = async (event) => {
     return errorResponse(400, "Invalid input: " + err.message, allowOrigin);
   }
 
-  // GPT prompt
   const prompt = `Generate an SEO meta title and meta description for the following:
 Page topic: "${topic}"
 Page type: ${platform}
@@ -81,10 +80,17 @@ Description: ...`;
     const raw = data?.choices?.[0]?.message?.content;
     if (!raw) throw new Error("No content returned from OpenAI.");
 
-    // Extract title and description safely
-    const [titleLine, ...descLines] = raw.split("\n").filter(Boolean);
-    const title = titleLine.replace(/^Title:\s*/i, "").trim();
-    const description = descLines.join(" ").replace(/^Description:\s*/i, "").trim();
+    // Safer parsing using regex
+    const titleMatch = raw.match(/Title:\s*(.+)/i);
+    const descMatch = raw.match(/Description:\s*([\s\S]+)/i);
+
+    const title = titleMatch ? titleMatch[1].trim() : null;
+    const description = descMatch ? descMatch[1].trim() : null;
+
+    if (!title || !description) {
+      console.warn("Unexpected OpenAI format:", raw);
+      return errorResponse(500, "Failed to extract title or description.", allowOrigin);
+    }
 
     // Save usage record
     rateLimitMap.set(userIP, {
