@@ -8,7 +8,7 @@
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; color: #000;">
   <div style="max-width: 600px; margin: 4rem auto; padding: 2rem; text-align: center;">
 
-    <h1 style="margin: 0; padding-top: 1rem; font-size: 28px; line-height: 1.3; text-align: center;">
+    <h1 style="margin: 0; padding-top: 1rem; font-size: 28px; line-height: 1.3;">
       Get your meta titles and <br> descriptions in seconds with AI.
     </h1>
 
@@ -124,6 +124,13 @@
           body: JSON.stringify({ topic, tone, platform })
         });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          titleBox.innerText = "⚠️ " + (errorData.error || "Server error.");
+          console.error("Server responded with error:", errorData);
+          return;
+        }
+
         const data = await response.json();
 
         if (data.title && data.description) {
@@ -135,10 +142,12 @@
             disableFormWithMessage(LIMIT_MSG);
           }
         } else {
-          titleBox.innerText = "⚠️ Failed to generate meta content.";
+          titleBox.innerText = "⚠️ Unexpected response format.";
+          console.log("Raw API response:", data);
         }
       } catch (err) {
-        titleBox.innerText = "Error: " + err.message;
+        titleBox.innerText = "⚠️ Network or CORS error.";
+        console.error("Fetch error:", err);
       }
     }
 
