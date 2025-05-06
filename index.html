@@ -118,7 +118,7 @@
       results.style.display = "block";
 
       try {
-        const response = await fetch("https://your-netlify-site.netlify.app/.netlify/functions/generateMetaTags", {
+        const response = await fetch("https://dapper-unicorn-552725.netlify.app/.netlify/functions/generateMetaTags", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ topic, tone, platform })
